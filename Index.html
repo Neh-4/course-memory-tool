@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Memory</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:        #f5f5f0;
+    --surface:   #ffffff;
+    --border:    #e0e0d8;
+    --text:      #1a1a1a;
+    --muted:     #6b6b6b;
+    --accent:    #2d6a4f;
+    --accent-lt: #e8f4ef;
+    --tag-bg:    #eef2ff;
+    --tag-text:  #3730a3;
+    --radius:    8px;
+    --shadow:    0 1px 4px rgba(0,0,0,0.08);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  /* ── Layout ── */
+  #app { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 220px; min-height: 100vh; background: var(--surface);
+    border-right: 1px solid var(--border); padding: 24px 16px;
+    display: flex; flex-direction: column; gap: 8px; position: fixed;
+  }
+  .sidebar-title { font-size: 13px; font-weight: 700; color: var(--accent);
+                   text-transform: uppercase; letter-spacing: .08em;
+                   padding: 0 8px 12px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .nav-item {
+    padding: 9px 12px; border-radius: var(--radius); cursor: pointer;
+    font-size: 14px; color: var(--muted); transition: all .15s;
+  }
+  .nav-item:hover { background: var(--accent-lt); color: var(--accent); }
+  .nav-item.active { background: var(--accent-lt); color: var(--accent); font-weight: 600; }
+
+  /* ── Main ── */
+  #main { margin-left: 220px; padding: 32px; flex: 1; max-width: 900px; }
+
+  /* ── Search Bar ── */
+  #search-wrap { position: relative; margin-bottom: 32px; }
+  #search-input {
+    width: 100%; padding: 14px 20px 14px 48px; font-size: 16px;
+    border: 1px solid var(--border); border-radius: 40px; background: var(--surface);
+    outline: none; transition: border .15s; box-shadow: var(--shadow);
+  }
+  #search-input:focus { border-color: var(--accent); }
+  #search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+                 color: var(--muted); font-size: 18px; }
+  #search-filter { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 4px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 13px; cursor: pointer; color: var(--muted); transition: all .15s;
+  }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    box-shadow: var(--shadow); cursor: pointer; transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .card-meta  { font-size: 13px; color: var(--muted); }
+
+  /* ── Tags ── */
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag {
+    background: var(--tag-bg); color: var(--tag-text); font-size: 12px;
+    padding: 2px 10px; border-radius: 12px; cursor: pointer;
+  }
+  .tag:hover { background: var(--tag-text); color: #fff; }
+
+  /* ── Stats Strip ── */
+  #stats-strip { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 24px; flex: 1; min-width: 120px; box-shadow: var(--shadow);
+  }
+  .stat-num  { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .stat-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Skill Map ── */
+  #skill-map-section { margin-bottom: 32px; }
+  .section-heading { font-size: 14px; font-weight: 700; color: var(--muted);
+                     text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+  #skill-map { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-bubble {
+    background: var(--accent-lt); color: var(--accent); font-size: 13px;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    border: 1px solid transparent; transition: all .15s; font-weight: 500;
+  }
+  .skill-bubble:hover { background: var(--accent); color: #fff; }
+
+  /* ── Detail View ── */
+  #detail-view { display: none; }
+  .detail-header { margin-bottom: 24px; }
+  .detail-label { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .detail-meta  { font-size: 13px; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+    color: var(--accent); cursor: pointer; margin-bottom: 20px; font-weight: 500;
+  }
+  .back-btn:hover { text-decoration: underline; }
+
+  /* ── Summary Body ── */
+  .summary-body { font-size: 15px; line-height: 1.8; }
+  .summary-body h1, .summary-body h2 { font-size: 18px; font-weight: 700; margin: 24px 0 8px; color: var(--accent); }
+  .summary-body h3 { font-size: 15px; font-weight: 600; margin: 16px 0 6px; }
+  .summary-body p  { margin-bottom: 12px; }
+  .summary-body ul, .summary-body ol { padding-left: 20px; margin-bottom: 12px; }
+  .summary-body li { margin-bottom: 4px; }
+
+  /* ── Assignment Block ── */
+  .assignment-block {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius);
+    padding: 20px; margin-top: 32px;
+  }
+  .assignment-block h2 { color: #92400e; font-size: 16px; margin-bottom: 12px; }
+
+  /* ── Prev/Next Nav ── */
+  .lecture-nav { display: flex; justify-content: space-between; margin-top: 40px;
+                 padding-top: 20px; border-top: 1px solid var(--border); }
+  .nav-btn {
+    padding: 8px 18px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--surface); font-size: 13px; cursor: pointer; color: var(--accent);
+    font-weight: 500; transition: all .15s;
+  }
+  .nav-btn:hover { background: var(--accent-lt); }
+  .nav-btn:disabled { opacity: .35; cursor: default; }
+
+  /* ── Search Results ── */
+  .results-section { margin-bottom: 28px; }
+  .results-section-title { font-size: 13px; font-weight: 700; color: var(--muted);
+                           text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .result-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 18px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s;
+  }
+  .result-item:hover { border-color: var(--accent); }
+  .result-title { font-size: 14px; font-weight: 600; }
+  .result-snippet { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .result-badge {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .badge-lecture    { background: var(--accent-lt); color: var(--accent); }
+  .badge-assignment { background: #fffbeb; color: #92400e; }
+  .badge-reading    { background: #f0f9ff; color: #0369a1; }
+
+  /* ── Skill Detail ── */
+  .skill-detail-header { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+
+  /* ── External Link ── */
+  .ext-link { color: var(--accent); font-size: 13px; text-decoration: none; }
+  .ext-link:hover { text-decoration: underline; }
+
+  /* ── Empty State ── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 15px; }
+
+  /* ── Loading ── */
+  .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+  /* ── Scan Button ── */
+  #scan-btn {
+    margin-top: auto; padding: 10px; border-radius: var(--radius);
+    background: var(--accent); color: #fff; font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer; width: 100%; transition: opacity .15s;
+  }
+  #scan-btn:hover { opacity: .85; }
+  #scan-status { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-title" id="course-name-nav">Course Memory</div>
+    <div class="nav-item active" data-view="dashboard">🏠 Dashboard</div>
+    <div class="nav-item" data-view="lectures">📹 Lectures</div>
+    <div class="nav-item" data-view="assignments">📝 Assignments</div>
+    <div class="nav-item" data-view="reading">📚 Reading</div>
+    <button id="scan-btn" onclick="triggerScan()">↻ Sync Now</button>
+    <div id="scan-status"></div>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main">
+
+    <!-- Search -->
+    <div id="search-wrap">
+      <span id="search-icon">🔍</span>
+      <input id="search-input" type="text" placeholder="Search lectures, skills, assignments…" oninput="onSearch(this.value)">
+      <div id="search-filter">
+        <button class="filter-btn active" data-filter="all"    onclick="setFilter('all')">All</button>
+        <button class="filter-btn"        data-filter="lectures"    onclick="setFilter('lectures')">Lectures</button>
+        <button class="filter-btn"        data-filter="assignments" onclick="setFilter('assignments')">Assignments</button>
+        <button class="filter-btn"        data-filter="reading"     onclick="setFilter('reading')">Reading</button>
+      </div>
+    </div>
+
+    <!-- Views -->
+    <div id="view-dashboard">
+      <div id="stats-strip">
+        <div class="stat-box"><div class="stat-num" id="stat-lectures">—</div><div class="stat-label">Lectures</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-assignments">—</div><div class="stat-label">Assignments</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-reading">—</div><div class="stat-label">Reading</div></div>
+
+      </div>
+      <div id="skill-map-section">
+        <div class="section-heading">Skill Map</div>
+        <div id="skill-map"><div class="loading">Loading skills…</div></div>
+      </div>
+    </div>
+
+    <div id="view-lectures"    style="display:none"></div>
+    <div id="view-assignments" style="display:none"></div>
+    <div id="view-reading"     style="display:none"></div>
+    <div id="view-search"      style="display:none"></div>
+    <div id="view-skill"       style="display:none"></div>
+    <div id="view-detail"      style="display:none"></div>
+
+  </main>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let currentView   = "dashboard";
+let currentFilter = "all";
+let searchTimeout = null;
+
+// ── Init ───────────────────────────────────────────────────────
+window.onload = () => {
+  loadDashboard();
+  setupNav();
+};
+
+function setupNav() {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.addEventListener("click", () => {
+      const view = el.dataset.view;
+      setActiveNav(view);
+      showView(view);
+    });
+  });
+}
+
+function setActiveNav(view) {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.view === view);
+  });
+}
+
+// ── View Router ────────────────────────────────────────────────
+function showView(view) {
+  ["dashboard","lectures","assignments","reading","search","skill","detail"].forEach(v => {
+    document.getElementById("view-" + v).style.display = "none";
+  });
+  document.getElementById("view-" + view).style.display = "block";
+  currentView = view;
+
+  if (view === "dashboard")   loadDashboard();
+  if (view === "lectures")    loadLecturesList();
+  if (view === "assignments") loadAssignmentsList();
+  if (view === "reading")     loadReadingList();
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+function loadDashboard() {
+  google.script.run
+    .withSuccessHandler(data => {
+      document.getElementById("course-name-nav").textContent = data.courseName || "Course Memory";
+      document.getElementById("stat-lectures").textContent    = data.stats.totalLectures;
+      document.getElementById("stat-assignments").textContent = data.stats.totalAssignments;
+      document.getElementById("stat-reading").textContent     = data.stats.totalReadingMaterials;
+      document.getElementById("stat-updated").textContent     = data.stats.lastUpdated;
+      renderSkillMap(data.skillMap);
+    })
+    .withFailureHandler(err => console.error(err))
+    .getDashboardData();
+}
+
+function renderSkillMap(skillMap) {
+  const el = document.getElementById("skill-map");
+  const skills = Object.values(skillMap);
+  if (!skills.length) { el.innerHTML = '<div class="empty">No skills detected yet.</div>'; return; }
+  el.innerHTML = skills.map(s =>
+    `<div class="skill-bubble" onclick="showSkillDetail('${esc(s.skill)}')">${esc(s.skill)}</div>`
+  ).join("");
+}
+
+// ── Lectures List ──────────────────────────────────────────────
+function loadLecturesList() {
+  const el = document.getElementById("view-lectures");
+  el.innerHTML = '<div class="loading">Loading lectures…</div>';
+  google.script.run
+    .withSuccessHandler(lectures => {
+      if (!lectures.length) { el.innerHTML = '<div class="empty">No lectures summarised yet.</div>'; return; }
+      el.innerHTML = lectures.map(l => `
+        <div class="card" onclick="showLectureDetail('${l.id}')">
+          <div class="card-title">${esc(l.label)}</div>
+          <div class="card-meta">${esc(l.date)}</div>
+          <div class="tags">${(l.skills||[]).map(s => `<span class="tag" onclick="event.stopPropagation();showSkillDetail('${esc(s)}')">${esc(s)}</span>`).join("")}</div>
+        </div>`).join("");
+    })
+    .withFailureHandler(err => { el.innerHTML = '<div class="empty">Error loading lectures.</div>'; })
+    .getAllLectures();
+}
+
+// ── Lecture Detail ─────────────────────────────────────────────
+function showLectureDetail(id) {
+  const el = document.getElementById("view-detail");
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  showViewRaw("detail");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (!data) { el.innerHTML = '<div class="empty">Lecture not found.</div>'; return; }
+      el.innerHTML = `
+        <div class="back-btn" onclick="showView('lectures')">← Back to Lectures</div>
+        <div class="detail-header">
+          <div class="detail-label">${esc(data.label)}</div>
+          <div class="detail-meta">
+            <span>📅 ${esc(data.date)}</span>
+            ${data.slideUrl ? `<a class="ext-link" href="${data.slideUrl}" target="_blank">📎 View Slides</a>` : ""}
+          </div>
+          <div class="tags" style="margin-top:12px">
+            ${(data.skills||[]).map(s => `<span class="tag" onclick="showSkillDetail('${esc(s)}')">${esc(s)}</span>`).join("")}
+          </div>
+        </div>
+        <div class="summary-body">${renderMarkdown(data.summary)}</div>
+        <div class="lecture-nav">
+          <button class="nav-btn" ${!data.prev ? "disabled" : ""} onclick="showLectureDetail('${data.prev?.id||""}')">← ${data.prev?.label||"Previous"}</button>
+          <button class="nav-btn" ${!data.next ? "disabled" : ""} onclick="showLectureDetail('${data.next?.id||""}')">→ ${data.next?.label||"Next"}</button>
+        </div>`;
+    })
+    .withFailureHandler(err => { el.innerHTML = '<div class="empty">Error loading lecture.</div>'; })
+    .getLecture(id);
+}
+
+// ── Assignments List ───────────────────────────────────────────
+function loadAssignmentsList() {
+  const el = document.getElementById("view-assignments");
+  el.innerHTML = '<div class="loading">Loading assignments…</div>';
+  google.script.run
+    .withSuccessHandler(assignments => {
+      if (!assignments.length) { el.innerHTML = '<div class="empty">No assignments yet.</div>'; return; }
+      el.innerHTML = assignments.map(a => `
+        <div class="card" onclick="showAssignmentDetail('${a.id}')">
+          <div class="card-title">${esc(a.name)}</div>
+          <div class="card-meta">${esc(a.date)} ${a.skill ? "· " + esc(a.skill) : ""}</div>
+        </div>`).join("");
+    })
+    .withFailureHandler(() => { el.innerHTML = '<div class="empty">Error loading assignments.</div>'; })
+    .getAllAssignments();
+}
+
+// ── Assignment Detail ──────────────────────────────────────────
+function showAssignmentDetail(id) {
+  const el = document.getElementById("view-detail");
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  showViewRaw("detail");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (!data) { el.innerHTML = '<div class="empty">Not found.</div>'; return; }
+      el.innerHTML = `
+        <div class="back-btn" onclick="showView('assignments')">← Back to Assignments</div>
+        <div class="detail-header">
+          <div class="detail-label">${esc(data.name)}</div>
+          <div class="detail-meta">
+            <span>📅 ${esc(data.date)}</span>
+            ${data.skill ? `<span>🏷 ${esc(data.skill)}</span>` : ""}
+            ${data.fileUrl ? `<a class="ext-link" href="${data.fileUrl}" target="_blank">📎 View File</a>` : ""}
+          </div>
+        </div>
+        <div class="summary-body">${renderMarkdown(data.summary)}</div>`;
+    })
+    .withFailureHandler(() => { el.innerHTML = '<div class="empty">Error loading assignment.</div>'; })
+    .getAssignment(id);
+}
+
+// ── Reading List ───────────────────────────────────────────────
+function loadReadingList() {
+  const el = document.getElementById("view-reading");
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  google.script.run
+    .withSuccessHandler(items => {
+      if (!items.length) { el.innerHTML = '<div class="empty">No reading materials yet.</div>'; return; }
+      el.innerHTML = items.map(r => `
+        <div class="card" onclick="showReadingDetail('${r.id}')">
+          <div class="card-title">${esc(r.name)}</div>
+          <div class="card-meta">${esc(r.date)} ${r.skill ? "· " + esc(r.skill) : ""}</div>
+        </div>`).join("");
+    })
+    .withFailureHandler(() => { el.innerHTML = '<div class="empty">Error loading reading materials.</div>'; })
+    .getAllReadingMaterials();
+}
+
+// ── Reading Detail ─────────────────────────────────────────────
+function showReadingDetail(id) {
+  const el = document.getElementById("view-detail");
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  showViewRaw("detail");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (!data) { el.innerHTML = '<div class="empty">Not found.</div>'; return; }
+      el.innerHTML = `
+        <div class="back-btn" onclick="showView('reading')">← Back to Reading</div>
+        <div class="detail-header">
+          <div class="detail-label">${esc(data.name)}</div>
+          <div class="detail-meta">
+            <span>📅 ${esc(data.date)}</span>
+            ${data.skill ? `<span>🏷 ${esc(data.skill)}</span>` : ""}
+            ${data.fileUrl ? `<a class="ext-link" href="${data.fileUrl}" target="_blank">📂 Open in Drive</a>` : ""}
+          </div>
+        </div>
+        <div class="summary-body">${renderMarkdown(data.summary)}</div>`;
+    })
+    .withFailureHandler(() => { el.innerHTML = '<div class="empty">Error loading material.</div>'; })
+    .getReadingMaterial(id);
+}
+
+// ── Skill Detail ───────────────────────────────────────────────
+function showSkillDetail(skill) {
+  const el = document.getElementById("view-skill");
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  showViewRaw("skill");
+
+  google.script.run
+    .withSuccessHandler(data => {
+      el.innerHTML = `
+        <div class="back-btn" onclick="showView('dashboard')">← Back to Dashboard</div>
+        <div class="skill-detail-header">🏷 ${esc(data.skill)}</div>
+        <p style="color:var(--muted);font-size:13px;margin:6px 0 24px">All content covering this skill</p>
+
+        ${data.lectures.length ? `
+          <div class="section-heading">Lectures</div>
+          ${data.lectures.map(l => `
+            <div class="card" onclick="showLectureDetail('${l.id}')">
+              <div class="card-title">${esc(l.label)}</div>
+            </div>`).join("")}` : ""}
+
+        ${data.assignments.length ? `
+          <div class="section-heading" style="margin-top:20px">Assignments</div>
+          ${data.assignments.map(a => `
+            <div class="card" onclick="showAssignmentDetail('${a.id}')">
+              <div class="card-title">${esc(a.name)}</div>
+            </div>`).join("")}` : ""}
+
+        ${!data.lectures.length && !data.assignments.length ?
+          '<div class="empty">No content found for this skill.</div>' : ""}`;
+    })
+    .withFailureHandler(() => { el.innerHTML = '<div class="empty">Error loading skill.</div>'; })
+    .getSkillContent(skill);
+}
+
+// ── Search ─────────────────────────────────────────────────────
+function onSearch(query) {
+  clearTimeout(searchTimeout);
+  if (!query.trim()) { showView(currentView === "search" ? "dashboard" : currentView); return; }
+  searchTimeout = setTimeout(() => runSearch(query), 300);
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.toggle("active", b.dataset.filter === filter));
+  const q = document.getElementById("search-input").value;
+  if (q.trim()) runSearch(q);
+}
+
+function runSearch(query) {
+  const el = document.getElementById("view-search");
+  el.innerHTML = '<div class="loading">Searching…</div>';
+  showViewRaw("search");
+
+  google.script.run
+    .withSuccessHandler(results => {
+      const f  = currentFilter;
+      const lec = (f === "all" || f === "lectures")    ? results.lectures        : [];
+      const asg = (f === "all" || f === "assignments") ? results.assignments      : [];
+      const rdg = (f === "all" || f === "reading")     ? results.readingMaterials : [];
+
+      if (!lec.length && !asg.length && !rdg.length) {
+        el.innerHTML = '<div class="empty">No results found.</div>'; return;
+      }
+
+      el.innerHTML = [
+        lec.length ? `<div class="results-section">
+          <div class="results-section-title">Lectures (${lec.length})</div>
+          ${lec.map(l => resultCard(l.id, "lecture", l.label, l.summary, () => showLectureDetail(l.id))).join("")}
+        </div>` : "",
+
+        asg.length ? `<div class="results-section">
+          <div class="results-section-title">Assignments (${asg.length})</div>
+          ${asg.map(a => resultCard(a.id, "assignment", a.name, a.summary, () => showAssignmentDetail(a.id))).join("")}
+        </div>` : "",
+
+        rdg.length ? `<div class="results-section">
+          <div class="results-section-title">Reading Materials (${rdg.length})</div>
+          ${rdg.map(r => resultCard(r.id, "reading", r.name, r.summary, () => showReadingDetail(r.id))).join("")}
+        </div>` : ""
+      ].join("");
+
+      // Re-attach click handlers
+      document.querySelectorAll("[data-result-id]").forEach(el => {
+        const id   = el.dataset.resultId;
+        const type = el.dataset.resultType;
+        el.onclick = () => {
+          if (type === "lecture")    showLectureDetail(id);
+          if (type === "assignment") showAssignmentDetail(id);
+          if (type === "reading")    showReadingDetail(id);
+        };
+      });
+    })
+    .withFailureHandler(() => { el.innerHTML = '<div class="empty">Search failed.</div>'; })
+    .searchContent(query);
+}
+
+function resultCard(id, type, title, summary, fn) {
+  const badge   = { lecture: "badge-lecture", assignment: "badge-assignment", reading: "badge-reading" }[type];
+  const label   = { lecture: "Lecture", assignment: "Assignment", reading: "Reading" }[type];
+  const snippet = (summary || "").replace(/[#*`]/g, "").slice(0, 120) + "…";
+  return `<div class="result-item" data-result-id="${id}" data-result-type="${type}">
+    <div><span class="result-badge ${badge}">${label}</span></div>
+    <div class="result-title">${esc(title)}</div>
+    <div class="result-snippet">${esc(snippet)}</div>
+  </div>`;
+}
+
+// ── Sync Button ────────────────────────────────────────────────
+function triggerScan() {
+  const btn = document.getElementById("scan-btn");
+  const status = document.getElementById("scan-status");
+  btn.disabled = true;
+  btn.textContent = "Syncing…";
+  status.textContent = "";
+
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false;
+      btn.textContent = "↻ Sync Now";
+      status.textContent = res.success ? "✓ Done" : "✗ " + res.message;
+      if (res.success) loadDashboard();
+    })
+    .withFailureHandler(() => {
+      btn.disabled = false;
+      btn.textContent = "↻ Sync Now";
+      status.textContent = "✗ Error";
+    })
+    .triggerManualScan();
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function showViewRaw(view) {
+  ["dashboard","lectures","assignments","reading","search","skill","detail"].forEach(v => {
+    document.getElementById("view-" + v).style.display = "none";
+  });
+  document.getElementById("view-" + view).style.display = "block";
+  currentView = view;
+}
+
+function esc(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Minimal markdown renderer for summary bodies
+function renderMarkdown(text) {
+  if (!text) return "";
+  return text
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/^- (.+)$/gm, "<li>$1</li>")
+    .replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>")
+    .replace(/\n{2,}/g, "</p><p>")
+    .replace(/^(?!<[hul])/gm, "<p>")
+    .replace(/SKILLS:.+$/m, ""); // strip skill tags line from display
+}
+</script>
+</body>
+</html>
