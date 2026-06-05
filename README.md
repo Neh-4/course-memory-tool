@@ -190,8 +190,6 @@ Course Memory Tool (Apps Script Project)
 
 ## Author
 
-Built by Neha Pandey as a personal productivity tool for a creating a memory of course taken in liue of pencil-paper note making.
+Built by Neha Pandey as a personal productivity tool for creating a memory of course taken in liue of pencil-paper note making.
 
 ---
-
-*This project is part of an ongoing effort to apply AI engineering skills to real personal productivity challenges.*
